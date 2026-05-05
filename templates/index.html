@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Expense Tracker</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+
+    body{
+      font-family:'Inter',sans-serif;
+      background:#0a0a1a;
+      min-height:100dvh;
+      color:white;
+    }
+
+    .bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+    .blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.2;animation:float 8s ease-in-out infinite}
+    .b1{width:500px;height:500px;background:#7c3aed;top:-150px;left:-100px}
+    .b2{width:400px;height:400px;background:#059669;bottom:-100px;right:-100px;animation-delay:3s}
+    .b3{width:300px;height:300px;background:#2563eb;top:50%;left:50%;animation-delay:1.5s}
+    @keyframes float{0%,100%{transform:translate(0,0)}33%{transform:translate(20px,-20px)}66%{transform:translate(-15px,15px)}}
+
+    /* ── Auth Screen ── */
+    #auth-screen{
+      position:relative;z-index:1;
+      min-height:100dvh;display:flex;
+      align-items:center;justify-content:center;padding:20px;
+    }
+
+    .auth-card{
+      background:rgba(255,255,255,0.05);
+      backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:24px;padding:36px;
+      width:100%;max-width:400px;
+    }
+
+    .auth-logo{
+      width:60px;height:60px;
+      background:linear-gradient(135deg,#7c3aed,#059669);
+      border-radius:18px;display:flex;
+      align-items:center;justify-content:center;
+      font-size:26px;margin:0 auto 16px;
+      box-shadow:0 8px 32px rgba(124,58,237,0.4);
+    }
+
+    .auth-card h1{font-size:22px;text-align:center;margin-bottom:4px}
+    .auth-card p{font-size:13px;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:24px}
+
+    .tabs{display:flex;background:rgba(255,255,255,0.05);border-radius:12px;padding:3px;margin-bottom:20px;gap:3px}
+    .tab-btn{flex:1;padding:8px;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;color:rgba(255,255,255,0.4);background:transparent;transition:all .2s}
+    .tab-btn.active{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white}
+
+    .field{margin-bottom:14px}
+    .field label{display:block;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px}
+    .field input{width:100%;padding:11px 14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:11px;color:white;font-size:max(16px,14px);font-family:'Inter',sans-serif;outline:none;transition:all .2s}
+    .field input:focus{border-color:#7c3aed;background:rgba(124,58,237,0.1)}
+    .field input::placeholder{color:rgba(255,255,255,0.2)}
+
+    .submit-btn{width:100%;padding:12px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;margin-top:4px;box-shadow:0 4px 16px rgba(124,58,237,0.4)}
+    .submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,0.5)}
+    .error-msg{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none}
+
+    /* ── App Screen ── */
+    #app-screen{display:none;position:relative;z-index:1;min-height:100dvh}
+
+    .topbar{
+      background:rgba(10,10,26,0.8);backdrop-filter:blur(20px);
+      border-bottom:1px solid rgba(255,255,255,0.07);
+      padding:14px 20px;display:flex;align-items:center;gap:12px;
+      position:sticky;top:0;z-index:10;
+    }
+
+    .topbar-logo{width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#059669);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
+    .topbar h2{font-size:16px;font-weight:700;flex:1}
+    .topbar-user{font-size:12px;color:rgba(255,255,255,0.4)}
+    .logout-btn{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#ef4444;padding:5px 12px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+    .logout-btn:hover{background:rgba(239,68,68,0.2)}
+
+    .main-content{max-width:900px;margin:0 auto;padding:20px}
+
+    /* ── Stats row ── */
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+    .stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px}
+    .stat-label{font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;font-weight:500}
+    .stat-value{font-size:24px;font-weight:700;color:white}
+    .stat-sub{font-size:11px;color:rgba(255,255,255,0.3);margin-top:3px}
+
+    /* ── Add Expense Form ── */
+    .add-section{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:20px;margin-bottom:20px}
+    .section-title{font-size:14px;font-weight:600;margin-bottom:16px;color:rgba(255,255,255,0.8)}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+    .form-field label{display:block;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:5px}
+    .form-field input,.form-field select{width:100%;padding:9px 12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:white;font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:all .2s}
+    .form-field input:focus,.form-field select:focus{border-color:#7c3aed;background:rgba(124,58,237,0.08)}
+    .form-field input::placeholder{color:rgba(255,255,255,0.2)}
+    .form-field select option{background:#1a1a2e;color:white}
+    .add-btn{margin-top:12px;padding:10px 24px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;box-shadow:0 3px 12px rgba(124,58,237,0.35)}
+    .add-btn:hover{transform:translateY(-1px)}
+
+    /* ── Filters ── */
+    .filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+    .filter-label{font-size:11px;color:rgba(255,255,255,0.4);font-weight:500}
+    .filter-btn{padding:5px 14px;border-radius:999px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);transition:all .2s}
+    .filter-btn.active{background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.4);color:#a78bfa}
+
+    /* ── Expense list ── */
+    .expense-list{display:flex;flex-direction:column;gap:8px}
+    .expense-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .2s}
+    .expense-item:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.12)}
+    .cat-badge{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .expense-info{flex:1;min-width:0}
+    .expense-title{font-size:14px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .expense-meta{font-size:11px;color:rgba(255,255,255,0.35)}
+    .expense-amount{font-size:16px;font-weight:700;color:#4ade80;flex-shrink:0}
+    .item-actions{display:flex;gap:6px;flex-shrink:0}
+    .edit-btn,.del-btn{padding:5px 10px;border-radius:8px;font-size:11px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:all .2s}
+    .edit-btn{background:rgba(124,58,237,0.15);color:#a78bfa}
+    .del-btn{background:rgba(239,68,68,0.12);color:#ef4444}
+    .edit-btn:hover{background:rgba(124,58,237,0.3)}
+    .del-btn:hover{background:rgba(239,68,68,0.25)}
+
+    .empty-state{text-align:center;padding:40px;color:rgba(255,255,255,0.25);font-size:14px}
+
+    /* Edit modal */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay.show{display:flex}
+    .modal{background:#1a1a2e;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:24px;width:100%;max-width:440px}
+    .modal h3{font-size:16px;margin-bottom:18px}
+    .modal-actions{display:flex;gap:8px;margin-top:16px}
+    .modal-save{flex:1;padding:10px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+    .modal-cancel{padding:10px 16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);border-radius:10px;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif}
+
+    @media(max-width:600px){
+      .form-grid{grid-template-columns:1fr 1fr}
+      .stats-row{grid-template-columns:1fr 1fr}
+      .expense-amount{font-size:14px}
+    }
+
+    /* ── Scan Receipt button ── */
+    .scan-btn{margin-top:12px;margin-left:8px;padding:10px 20px;background:rgba(5,150,105,0.15);border:1px solid rgba(5,150,105,0.4);color:#34d399;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+    .scan-btn:hover{background:rgba(5,150,105,0.3)}
+
+    /* ── Receipt modal ── */
+    .receipt-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+    .receipt-modal-overlay.show{display:flex}
+    .receipt-modal{background:#12122a;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:24px;width:100%;max-width:480px;max-height:90dvh;overflow-y:auto}
+    .receipt-modal h3{font-size:16px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .close-btn{margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;line-height:1;padding:0 4px}
+    .close-btn:hover{color:white}
+
+    .upload-tabs{display:flex;gap:6px;margin-bottom:12px}
+    .upload-tab{flex:1;padding:8px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.45);transition:all .2s}
+    .upload-tab.active{background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.5);color:#a78bfa}
+
+    .drop-zone{border:2px dashed rgba(255,255,255,0.15);border-radius:14px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;color:rgba(255,255,255,0.35);font-size:13px}
+    .drop-zone:hover,.drop-zone.drag-over{border-color:#7c3aed;background:rgba(124,58,237,0.08);color:rgba(255,255,255,0.7)}
+    .drop-zone .drop-icon{font-size:36px;margin-bottom:8px}
+    .drop-zone input[type=file]{display:none}
+    .preview-img{width:100%;border-radius:10px;margin-top:12px;max-height:200px;object-fit:contain}
+
+    .camera-view{display:none}
+    .camera-view video{width:100%;border-radius:12px;background:#000;max-height:220px;object-fit:cover}
+    .camera-view canvas{display:none}
+    .camera-controls{display:flex;gap:8px;margin-top:10px}
+    .cam-btn{flex:1;padding:9px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:all .2s}
+    .cam-capture{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white}
+    .cam-capture:hover{opacity:0.88}
+    .cam-retake{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.1)!important}
+    .cam-retake:hover{background:rgba(255,255,255,0.12)}
+
+    .scan-action-btn{margin-top:14px;width:100%;padding:11px;background:linear-gradient(135deg,#059669,#0d9488);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+    .scan-action-btn:disabled{opacity:0.5;cursor:not-allowed}
+    .scan-action-btn:not(:disabled):hover{opacity:0.9}
+
+    /* Review panel */
+    .review-panel{display:none}
+    .review-panel.show{display:block}
+    .review-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+    .review-table th{text-align:left;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.08)}
+    .review-table td{padding:8px 8px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle}
+    .remove-item-btn{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#ef4444;padding:3px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif}
+    .remove-item-btn:hover{background:rgba(239,68,68,0.28)}
+    .review-cat-row{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:13px;color:rgba(255,255,255,0.6)}
+    .review-cat-row select{flex:1;padding:8px 10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:9px;color:white;font-size:13px;font-family:'Inter',sans-serif;outline:none}
+    .review-cat-row select option{background:#1a1a2e}
+    .confirm-btn{width:100%;padding:11px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:6px}
+    .confirm-btn:hover{opacity:0.9}
+    .no-items-msg{text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:13px}
+
+    /* ── Chat panel ── */
+    .chat-panel{position:fixed;bottom:24px;right:24px;width:330px;z-index:200;font-family:'Inter',sans-serif}
+    .chat-header{background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:16px 16px 0 0;padding:12px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+    .chat-header-icon{font-size:18px}
+    .chat-header-title{font-size:13px;font-weight:600;color:white;flex:1}
+    .chat-toggle{background:none;border:none;color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;line-height:1;padding:0}
+    .chat-body{background:#12122a;border:1px solid rgba(255,255,255,0.1);border-top:none;border-radius:0 0 16px 16px;overflow:hidden;max-height:0;transition:max-height .3s ease}
+    .chat-body.open{max-height:420px}
+    .chat-messages{height:280px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+    .chat-messages::-webkit-scrollbar{width:4px}
+    .chat-messages::-webkit-scrollbar-track{background:transparent}
+    .chat-messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+    .msg-bubble{max-width:85%;padding:9px 13px;border-radius:14px;font-size:12px;line-height:1.5;word-break:break-word}
+    .msg-bubble.bot{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.85);align-self:flex-start;border-bottom-left-radius:4px}
+    .msg-bubble.user{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;align-self:flex-end;border-bottom-right-radius:4px}
+    .msg-bubble.thinking{color:rgba(255,255,255,0.4);font-style:italic}
+    .chat-input-row{display:flex;gap:6px;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.07)}
+    .chat-input{flex:1;padding:8px 12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:white;font-size:12px;font-family:'Inter',sans-serif;outline:none}
+    .chat-input:focus{border-color:#7c3aed}
+    .chat-input::placeholder{color:rgba(255,255,255,0.25)}
+    .chat-send{padding:8px 14px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+    .chat-send:hover{opacity:0.88}
+
+    @media(max-width:480px){
+      .chat-panel{right:12px;bottom:12px;width:calc(100vw - 24px)}
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">💰</div>
+    <h1>Expense Tracker</h1>
+    <p>Track your spending. Stay in control.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <div class="error-msg" id="auth-error"></div>
+
+    <!-- Login form -->
+    <div id="login-form">
+      <div class="field"><label>Email</label><input id="login-email" type="email" placeholder="you@email.com"/></div>
+      <div class="field"><label>Password</label><input id="login-pass" type="password" placeholder="••••••••"/></div>
+      <button class="submit-btn" onclick="login()">Login →</button>
+    </div>
+
+    <!-- Register form -->
+    <div id="register-form" style="display:none">
+      <div class="field"><label>Username</label><input id="reg-username" type="text" placeholder="Your name"/></div>
+      <div class="field"><label>Email</label><input id="reg-email" type="email" placeholder="you@email.com"/></div>
+      <div class="field"><label>Password</label><input id="reg-pass" type="password" placeholder="Min 6 characters"/></div>
+      <button class="submit-btn" onclick="register()">Create Account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- App Screen -->
+<div id="app-screen">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-logo">💰</div>
+    <h2>Expense Tracker</h2>
+    <span class="topbar-user" id="topbar-user"></span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="main-content">
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Spent</div>
+        <div class="stat-value" id="stat-total">₹0</div>
+        <div class="stat-sub">All time</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Expenses</div>
+        <div class="stat-value" id="stat-count">0</div>
+        <div class="stat-sub">Recorded</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Top Category</div>
+        <div class="stat-value" id="stat-top" style="font-size:16px">—</div>
+        <div class="stat-sub" id="stat-top-amt"></div>
+      </div>
+    </div>
+
+    <!-- Add Expense -->
+    <div class="add-section">
+      <div class="section-title">➕ Add New Expense</div>
+      <div class="form-grid">
+        <div class="form-field"><label>Title</label><input id="f-title" placeholder="e.g. Lunch"/></div>
+        <div class="form-field"><label>Amount (₹)</label><input id="f-amount" type="number" placeholder="0.00" min="0"/></div>
+        <div class="form-field">
+          <label>Category</label>
+          <select id="f-category">
+            <option>Food</option><option>Transport</option><option>Shopping</option>
+            <option>Entertainment</option><option>Health</option><option>Education</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-field"><label>Date</label><input id="f-date" type="date"/></div>
+      </div>
+      <div class="form-field" style="margin-top:10px"><label>Description (optional)</label><input id="f-desc" placeholder="Any notes..."/></div>
+      <button class="add-btn" onclick="addExpense()">Add Expense</button>
+      <button class="scan-btn" onclick="openReceiptModal()">📷 Scan Receipt</button>
+    </div>
+
+    <!-- Filter -->
+    <div class="filter-row">
+      <span class="filter-label">Filter:</span>
+      <button class="filter-btn active" onclick="filterBy('All')">All</button>
+      <button class="filter-btn" onclick="filterBy('Food')">🍔 Food</button>
+      <button class="filter-btn" onclick="filterBy('Transport')">🚗 Transport</button>
+      <button class="filter-btn" onclick="filterBy('Shopping')">🛒 Shopping</button>
+      <button class="filter-btn" onclick="filterBy('Entertainment')">🎮 Entertainment</button>
+      <button class="filter-btn" onclick="filterBy('Health')">💊 Health</button>
+      <button class="filter-btn" onclick="filterBy('Other')">📦 Other</button>
+    </div>
+
+    <!-- Expense list -->
+    <div class="expense-list" id="expense-list">
+      <div class="empty-state">No expenses yet. Add your first one above!</div>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Upload Modal -->
+<div class="receipt-modal-overlay" id="receipt-modal">
+  <div class="receipt-modal">
+    <h3>📷 Scan Receipt <button class="close-btn" onclick="closeReceiptModal()">×</button></h3>
+
+    <!-- Upload view -->
+    <div id="receipt-upload-view">
+      <div class="upload-tabs">
+        <button class="upload-tab active" onclick="switchUploadTab('file')">📁 Upload Image</button>
+        <button class="upload-tab" onclick="switchUploadTab('camera')">📷 Use Camera</button>
+      </div>
+
+      <!-- File upload -->
+      <div id="file-upload-panel">
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('receipt-file').click()">
+          <div class="drop-icon">🧾</div>
+          <div>Drop a receipt image here or <strong>click to browse</strong></div>
+          <div style="margin-top:4px;font-size:11px">JPG, PNG, WEBP accepted</div>
+          <input type="file" id="receipt-file" accept=".jpg,.jpeg,.png,.webp" onchange="onFileSelected(this)"/>
+        </div>
+        <img id="receipt-preview" class="preview-img" style="display:none"/>
+      </div>
+
+      <!-- Camera capture -->
+      <div class="camera-view" id="camera-panel" style="display:none">
+        <video id="cam-video" autoplay playsinline muted></video>
+        <canvas id="cam-canvas"></canvas>
+        <img id="cam-preview" class="preview-img" style="display:none"/>
+        <div class="camera-controls">
+          <button class="cam-btn cam-retake" id="cam-retake-btn" onclick="retakePhoto()" style="display:none">↩ Retake</button>
+          <button class="cam-btn cam-capture" id="cam-capture-btn" onclick="capturePhoto()">📸 Capture</button>
+        </div>
+      </div>
+
+      <button class="scan-action-btn" id="scan-btn" onclick="scanReceipt()" disabled>Scan Receipt</button>
+    </div>
+
+    <!-- Review view -->
+    <div class="review-panel" id="receipt-review-view">
+      <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:10px">Review extracted items — remove anything you don't want to add.</div>
+      <table class="review-table">
+        <thead><tr><th>Item</th><th>Price (₹)</th><th></th></tr></thead>
+        <tbody id="review-items-body"></tbody>
+      </table>
+      <div class="no-items-msg" id="no-items-msg" style="display:none">No items left. Add some or close.</div>
+      <div class="review-cat-row">
+        <span>Category:</span>
+        <select id="review-category">
+          <option>Food</option><option>Transport</option><option>Shopping</option>
+          <option>Entertainment</option><option>Health</option><option>Education</option><option selected>Other</option>
+        </select>
+      </div>
+      <button class="confirm-btn" id="confirm-btn" onclick="confirmReceipt()">Add items to tracker</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3>✏️ Edit Expense</h3>
+    <input type="hidden" id="edit-id"/>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="form-field"><label>Title</label><input id="edit-title"/></div>
+      <div class="form-field"><label>Amount</label><input id="edit-amount" type="number"/></div>
+      <div class="form-field">
+        <label>Category</label>
+        <select id="edit-category">
+          <option>Food</option><option>Transport</option><option>Shopping</option>
+          <option>Entertainment</option><option>Health</option><option>Education</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Date</label><input id="edit-date" type="date"/></div>
+    </div>
+    <div class="form-field" style="margin-top:8px"><label>Description</label><input id="edit-desc"/></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-save" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Panel -->
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header" onclick="toggleChat()">
+    <span class="chat-header-icon">🤖</span>
+    <span class="chat-header-title">Expense Assistant</span>
+    <button class="chat-toggle" id="chat-toggle-btn">▲</button>
+  </div>
+  <div class="chat-body" id="chat-body">
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg-bubble bot">Hi! Ask me anything about your expenses — like "What's my biggest spend?" or "How much on food this month?"</div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input" placeholder="Ask about your expenses…" onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button class="chat-send" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let token    = localStorage.getItem("token")    || "";
+  let username = localStorage.getItem("username") || "";
+  let activeFilter = "All";
+
+  const CATS = {
+    Food:"🍔",Transport:"🚗",Shopping:"🛒",Entertainment:"🎮",
+    Health:"💊",Education:"📚",Other:"📦"
+  };
+
+  const CAT_COLORS = {
+    Food:"rgba(251,146,60,0.2)",Transport:"rgba(96,165,250,0.2)",
+    Shopping:"rgba(232,121,249,0.2)",Entertainment:"rgba(167,139,250,0.2)",
+    Health:"rgba(74,222,128,0.2)",Education:"rgba(251,191,36,0.2)",Other:"rgba(148,163,184,0.2)"
+  };
+
+  // ── Init ──────────────────────────────────────────────────
+  if(token){ showApp(); }
+
+  // Set default date to today
+  document.getElementById("f-date").value = new Date().toISOString().split("T")[0];
+
+  function showApp(){
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("app-screen").style.display  = "block";
+    document.getElementById("topbar-user").textContent   = "Hi, "+username+" 👋";
+    loadExpenses();
+    loadSummary();
+  }
+
+  // ── Auth ──────────────────────────────────────────────────
+  function switchTab(tab){
+    document.querySelectorAll(".tab-btn").forEach((b,i)=>b.classList.toggle("active",(tab==="login"&&i===0)||(tab==="register"&&i===1)));
+    document.getElementById("login-form").style.display    = tab==="login"    ? "block":"none";
+    document.getElementById("register-form").style.display = tab==="register" ? "block":"none";
+    document.getElementById("auth-error").style.display    = "none";
+  }
+
+  async function register(){
+    const u = document.getElementById("reg-username").value.trim();
+    const e = document.getElementById("reg-email").value.trim();
+    const p = document.getElementById("reg-pass").value.trim();
+    const r = await apiCall("/api/register","POST",{username:u,email:e,password:p},false);
+    if(r.error){ showError(r.error); return; }
+    saveAuth(r.token, r.username); showApp();
+  }
+
+  async function login(){
+    const e = document.getElementById("login-email").value.trim();
+    const p = document.getElementById("login-pass").value.trim();
+    const r = await apiCall("/api/login","POST",{email:e,password:p},false);
+    if(r.error){ showError(r.error); return; }
+    saveAuth(r.token, r.username); showApp();
+  }
+
+  function logout(){
+    localStorage.removeItem("token"); localStorage.removeItem("username");
+    token=""; username="";
+    document.getElementById("app-screen").style.display  = "none";
+    document.getElementById("auth-screen").style.display = "flex";
+  }
+
+  function saveAuth(t,u){ token=t; username=u; localStorage.setItem("token",t); localStorage.setItem("username",u); }
+  function showError(msg){ const e=document.getElementById("auth-error"); e.textContent=msg; e.style.display="block"; }
+
+  // ── Expenses ──────────────────────────────────────────────
+  async function loadExpenses(){
+    const cat = activeFilter==="All" ? "" : "&category="+activeFilter;
+    const r   = await apiCall("/api/expenses?x=1"+cat,"GET");
+    if(r.error) return;
+    renderExpenses(r.expenses);
+    document.getElementById("stat-total").textContent = "₹"+r.total.toLocaleString();
+  }
+
+  async function loadSummary(){
+    const r = await apiCall("/api/summary","GET");
+    if(r.error) return;
+    document.getElementById("stat-count").textContent = r.count;
+    if(r.by_category && Object.keys(r.by_category).length){
+      const top = Object.entries(r.by_category).sort((a,b)=>b[1]-a[1])[0];
+      document.getElementById("stat-top").textContent     = (CATS[top[0]]||"📦")+" "+top[0];
+      document.getElementById("stat-top-amt").textContent = "₹"+top[1].toLocaleString();
+    }
+  }
+
+  function renderExpenses(list){
+    const el = document.getElementById("expense-list");
+    if(!list.length){ el.innerHTML='<div class="empty-state">No expenses in this category yet.</div>'; return; }
+    el.innerHTML = list.map(e=>`
+      <div class="expense-item">
+        <div class="cat-badge" style="background:${CAT_COLORS[e.category]||CAT_COLORS.Other}">${CATS[e.category]||"📦"}</div>
+        <div class="expense-info">
+          <div class="expense-title">${escHtml(e.title)}</div>
+          <div class="expense-meta">${e.category} · ${e.date}${e.description?' · '+escHtml(e.description):''}</div>
+        </div>
+        <div class="expense-amount">₹${parseFloat(e.amount).toLocaleString()}</div>
+        <div class="item-actions">
+          <button class="edit-btn" onclick="openEdit(${JSON.stringify(e).replace(/"/g,'&quot;')})">Edit</button>
+          <button class="del-btn"  onclick="delExpense(${e.id})">Del</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function addExpense(){
+    const title  = document.getElementById("f-title").value.trim();
+    const amount = document.getElementById("f-amount").value;
+    const cat    = document.getElementById("f-category").value;
+    const date   = document.getElementById("f-date").value;
+    const desc   = document.getElementById("f-desc").value.trim();
+    if(!title||!amount||!date){ alert("Please fill title, amount and date"); return; }
+    const r = await apiCall("/api/expenses","POST",{title,amount:parseFloat(amount),category:cat,date,description:desc});
+    if(r.error){ alert(r.error); return; }
+    document.getElementById("f-title").value="";
+    document.getElementById("f-amount").value="";
+    document.getElementById("f-desc").value="";
+    loadExpenses(); loadSummary();
+  }
+
+  async function delExpense(id){
+    if(!confirm("Delete this expense?")) return;
+    await apiCall("/api/expenses/"+id,"DELETE");
+    loadExpenses(); loadSummary();
+  }
+
+  function filterBy(cat){
+    activeFilter=cat;
+    document.querySelectorAll(".filter-btn").forEach(b=>b.classList.toggle("active",b.textContent.includes(cat)||(cat==="All"&&b.textContent==="All")));
+    loadExpenses();
+  }
+
+  // ── Edit modal ────────────────────────────────────────────
+  function openEdit(e){
+    document.getElementById("edit-id").value       = e.id;
+    document.getElementById("edit-title").value    = e.title;
+    document.getElementById("edit-amount").value   = e.amount;
+    document.getElementById("edit-category").value = e.category;
+    document.getElementById("edit-date").value     = e.date;
+    document.getElementById("edit-desc").value     = e.description||"";
+    document.getElementById("edit-modal").classList.add("show");
+  }
+
+  function closeModal(){ document.getElementById("edit-modal").classList.remove("show"); }
+
+  async function saveEdit(){
+    const id = document.getElementById("edit-id").value;
+    const data = {
+      title:       document.getElementById("edit-title").value.trim(),
+      amount:      parseFloat(document.getElementById("edit-amount").value),
+      category:    document.getElementById("edit-category").value,
+      date:        document.getElementById("edit-date").value,
+      description: document.getElementById("edit-desc").value.trim()
+    };
+    const r = await apiCall("/api/expenses/"+id,"PUT",data);
+    if(r.error){ alert(r.error); return; }
+    closeModal(); loadExpenses(); loadSummary();
+  }
+
+  // ── API helper ────────────────────────────────────────────
+  async function apiCall(url,method,body,auth=true){
+    const headers = {"Content-Type":"application/json"};
+    if(auth && token) headers["Authorization"] = "Bearer "+token;
+    try{
+      const r = await fetch(url,{method,headers,body:body?JSON.stringify(body):undefined});
+      return await r.json();
+    }catch(e){ return {error:"Network error"}; }
+  }
+
+  function escHtml(t){ return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  // ── Receipt Upload ────────────────────────────────────────
+  let receiptItems = [];
+  let camStream    = null;
+  let capturedBlob = null;
+  let activeUploadTab = "file";
+
+  function openReceiptModal(){
+    receiptItems = []; capturedBlob = null;
+    document.getElementById("receipt-upload-view").style.display = "block";
+    document.getElementById("receipt-review-view").classList.remove("show");
+    document.getElementById("receipt-preview").style.display = "none";
+    document.getElementById("receipt-file").value = "";
+    document.getElementById("scan-btn").disabled = true;
+    document.getElementById("receipt-modal").classList.add("show");
+    switchUploadTab("file");
+  }
+
+  function closeReceiptModal(){
+    stopCamera();
+    document.getElementById("receipt-modal").classList.remove("show");
+  }
+
+  function switchUploadTab(tab){
+    activeUploadTab = tab;
+    document.querySelectorAll(".upload-tab").forEach((b,i)=>b.classList.toggle("active",(tab==="file"&&i===0)||(tab==="camera"&&i===1)));
+    document.getElementById("file-upload-panel").style.display  = tab==="file"   ? "block":"none";
+    document.getElementById("camera-panel").style.display       = tab==="camera" ? "block":"none";
+    if(tab==="camera") startCamera(); else stopCamera();
+    // reset scan btn if switching away
+    if(tab==="file") {
+      const hasFile = document.getElementById("receipt-file").files.length > 0;
+      document.getElementById("scan-btn").disabled = !hasFile;
+    } else {
+      document.getElementById("scan-btn").disabled = !capturedBlob;
+    }
+  }
+
+  function onFileSelected(input){
+    const file = input.files[0];
+    if(!file) return;
+    if(file.size > 15 * 1024 * 1024){ alert("File too large. Please use an image under 15 MB."); return; }
+    const preview = document.getElementById("receipt-preview");
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+    document.getElementById("scan-btn").disabled = false;
+  }
+
+  // Camera functions
+  async function startCamera(){
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      const video = document.getElementById("cam-video");
+      video.srcObject = camStream;
+      video.style.display = "block";
+      document.getElementById("cam-preview").style.display = "none";
+      document.getElementById("cam-capture-btn").textContent = "📸 Capture";
+      document.getElementById("cam-retake-btn").style.display = "none";
+      capturedBlob = null;
+      document.getElementById("scan-btn").disabled = true;
+    } catch(e) {
+      alert("Camera access denied or not available. Please use file upload instead.");
+      switchUploadTab("file");
+    }
+  }
+
+  function stopCamera(){
+    if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  }
+
+  function capturePhoto(){
+    const video  = document.getElementById("cam-video");
+    const canvas = document.getElementById("cam-canvas");
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    canvas.toBlob(blob => {
+      capturedBlob = blob;
+      const preview = document.getElementById("cam-preview");
+      preview.src = URL.createObjectURL(blob);
+      preview.style.display = "block";
+      video.style.display = "none";
+      document.getElementById("cam-retake-btn").style.display = "block";
+      document.getElementById("cam-capture-btn").textContent = "✅ Captured";
+      document.getElementById("scan-btn").disabled = false;
+    }, "image/jpeg", 0.92);
+    stopCamera();
+  }
+
+  function retakePhoto(){
+    capturedBlob = null;
+    document.getElementById("cam-preview").style.display = "none";
+    document.getElementById("scan-btn").disabled = true;
+    startCamera();
+  }
+
+  // Drag-and-drop support
+  const dz = document.getElementById("drop-zone");
+  dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("drag-over"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+  dz.addEventListener("drop", e => {
+    e.preventDefault(); dz.classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if(!file) return;
+    const input = document.getElementById("receipt-file");
+    const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+    onFileSelected(input);
+  });
+
+  async function scanReceipt(){
+    const file = activeUploadTab === "camera" ? capturedBlob : document.getElementById("receipt-file").files[0];
+    if(!file) return;
+    const btn = document.getElementById("scan-btn");
+    btn.disabled = true; btn.textContent = "Scanning…";
+    const form = new FormData();
+    form.append("receipt", file, "receipt.jpg");
+    try {
+      const resp = await fetch("/api/receipt/scan", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token },
+        body: form
+      });
+      const data = await resp.json();
+      if(data.error){ alert("Scan failed: " + data.error); btn.disabled=false; btn.textContent="Scan Receipt"; return; }
+      receiptItems = data.items || [];
+      showReviewPanel();
+    } catch(e) {
+      alert("Network error during scan");
+    }
+    btn.disabled = false; btn.textContent = "Scan Receipt";
+  }
+
+  function showReviewPanel(){
+    document.getElementById("receipt-upload-view").style.display = "none";
+    const panel = document.getElementById("receipt-review-view");
+    panel.classList.add("show");
+    renderReviewItems();
+  }
+
+  function renderReviewItems(){
+    const tbody = document.getElementById("review-items-body");
+    const noMsg = document.getElementById("no-items-msg");
+    const confirmBtn = document.getElementById("confirm-btn");
+    if(!receiptItems.length){
+      tbody.innerHTML = ""; noMsg.style.display = "block"; confirmBtn.disabled = true; return;
+    }
+    noMsg.style.display = "none"; confirmBtn.disabled = false;
+    tbody.innerHTML = receiptItems.map((it, i) => `
+      <tr>
+        <td>${escHtml(it.item || "Unknown")}</td>
+        <td>₹${parseFloat(it.price || 0).toFixed(2)}</td>
+        <td><button class="remove-item-btn" onclick="removeReceiptItem(${i})">Remove</button></td>
+      </tr>
+    `).join("");
+    document.getElementById("confirm-btn").textContent = `Add ${receiptItems.length} item${receiptItems.length!==1?"s":""} to tracker`;
+  }
+
+  function removeReceiptItem(i){
+    receiptItems.splice(i, 1);
+    renderReviewItems();
+  }
+
+  async function confirmReceipt(){
+    if(!receiptItems.length) return;
+    const category = document.getElementById("review-category").value;
+    const payload  = receiptItems.map(it => ({ item: it.item, price: it.price, category }));
+    const r = await apiCall("/api/receipt/confirm", "POST", { items: payload });
+    if(r.error){ alert("Error: " + r.error); return; }
+    closeReceiptModal();
+    loadExpenses(); loadSummary();
+    alert(`✅ Added ${r.added} expense${r.added!==1?"s":""} from receipt!`);
+  }
+
+  // ── Chat ──────────────────────────────────────────────────
+  let chatOpen = false;
+
+  function toggleChat(){
+    chatOpen = !chatOpen;
+    document.getElementById("chat-body").classList.toggle("open", chatOpen);
+    document.getElementById("chat-toggle-btn").textContent = chatOpen ? "▼" : "▲";
+    if(chatOpen) document.getElementById("chat-input").focus();
+  }
+
+  function appendMsg(text, role){
+    const el = document.getElementById("chat-messages");
+    const div = document.createElement("div");
+    div.className = "msg-bubble " + role;
+    div.textContent = text;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+    return div;
+  }
+
+  async function sendChat(){
+    const input = document.getElementById("chat-input");
+    const msg   = input.value.trim();
+    if(!msg) return;
+    input.value = "";
+    appendMsg(msg, "user");
+    const thinking = appendMsg("thinking…", "bot thinking");
+    try {
+      const r = await apiCall("/api/chat", "POST", { message: msg });
+      thinking.remove();
+      if(r.error){ appendMsg("Sorry, something went wrong: " + r.error, "bot"); return; }
+      appendMsg(r.reply, "bot");
+    } catch(e) {
+      thinking.remove();
+      appendMsg("Network error. Please try again.", "bot");
+    }
+  }
+</script>
+</body>
+</html>
