@@ -3,7 +3,7 @@
 A full-stack expense tracker with JWT authentication and REST API.
 
 ## Live Demo
-🌐 [Try it here](your-render-link)
+🌐 [Try it here](https://expense-tracker-c2lu.onrender.com)
 
 ## Features
 - Register & Login with JWT tokens
